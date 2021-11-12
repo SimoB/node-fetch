@@ -120,6 +120,43 @@ export default async function fetch(url, options_) {
 			});
 		}
 
+		// fix headers
+		request_.on('socket', s => {
+
+			// get next handler and remove from listeners
+			const nextHandler = s.listeners('data')[0];
+			s.off('data', nextHandler);
+
+			// preprend our handler
+			s.on('data', data => {
+
+				// HPE_INVALID_CHUNK_SIZE // Parse Error: Invalid character in chunk size
+				// let _data = data.toString().split('\r\n');
+				// _data = _data.filter(line => !line.toLowerCase().startsWith('content-length:'));
+				// _data = _data.join('\r\n');
+				// nextHandler.call(s, Buffer.from(_data));
+
+				// split \r\n
+				let _data = data.toString('hex').toUpperCase().split('0D0A');
+
+				// search for 'Transfer-encoding: Chunked'
+				let _tec = _data.filter(line => Buffer.from(line, 'hex').toString('utf-8').toLowerCase().replace(' ', '').includes('transfer-encoding:chunked'));
+
+				// if tec found remove content lenght
+				if (_tec.length) {
+					_data = _data.filter(line => !Buffer.from(line, 'hex').toString('utf-8').toLowerCase().replace(' ', '').includes('content-length:'));
+				}
+
+				// re-join
+				_data = _data.join('0D0A');
+
+				// call next handler
+				nextHandler.call(s, Buffer.from(_data, 'hex'));
+
+			});
+
+		});
+
 		request_.on('response', response_ => {
 			request_.setTimeout(0);
 			const headers = fromRawHeaders(response_.rawHeaders);
