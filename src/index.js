@@ -270,7 +270,7 @@ export default async function fetch(url, options_) {
 				const raw = pump(response_, new PassThrough(), reject);
 				raw.once('data', chunk => {
 					// See http://stackoverflow.com/questions/37519828
-					body = (chunk[0] & 0x0F) === 0x08 ? pump(body, zlib.createInflate(), reject) : pump(body, zlib.createInflateRaw(), reject);
+					body = (chunk[0] & 0x0F) === 0x08 ? pump(body, zlib.createInflate(zlibOptions), reject) : pump(body, zlib.createInflateRaw(zlibOptions), reject);
 
 					response = new Response(body, responseOptions);
 					resolve(response);
